@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Special Birthday Wish!</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 1s ease, background-image 1s ease;
+        }
+        /* Custom CSS for Confetti/Balloons (Floating upward animation) */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 12px;
+            height: 18px; 
+            background-color: #f00; 
+            opacity: 0;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            animation: float-up linear infinite;
+        }
+        /* Animation to float UP, like a balloon */
+        @keyframes float-up {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            5% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) rotate(1080deg); opacity: 0.2; }
+        }
+        
+        /* Default background (Light Mode) */
+        .default-bg {
+             background-color: #f3f4f6; /* slate-100 soft light mode */
+        }
+        /* Party Mode Background (Light/Music) */
+        .party-bg {
+            background-image: radial-gradient(circle at top right, #fecaca, #fbcfe8, #c7d2fe); 
+        }
+
+        /* Message Bubble Style */
+        .message-bubble {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: white; 
+            color: #1f2937; /* Dark text */
+            transition: opacity 0.5s ease;
+            font-weight: 500;
+        }
+        
+        /* Active Button Style (for setup steps) */
+        .active-btn {
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5); /* Indigo glow */
+        }
+
+        /* Final content box background */
+        .content-box-bg {
+            background-color: #ffffff; /* White background for content boxes */
+            color: #1f2937; /* Dark text for content */
+        }
+    </style>
+</head>
+<body class="default-bg text-gray-800 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- HIDDEN AUDIO ELEMENT -->
+    <audio id="background-music" loop>
+        <!-- Audio source is dynamically set via JS using MEDIA_CONFIG -->
+        <source src="" type="audio/mp3"> 
+        Your browser does support the audio element.
+    </audio>
+
+    <!-- Confetti Container -->
+    <div id="confetti-container" class="confetti-container hidden"></div>
+
+    <div class="w-full max-w-3xl bg-white p-8 sm:p-12 rounded-2xl shadow-2xl border border-gray-200">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-indigo-600">
+                🥳 A Special Birthday Surprise!
+            </h1>
+            <p id="sub-header" class="text-gray-500 mt-2 text-lg font-light min-h-[1.5rem]">Welcome.</p>
+        </header>
+        
+        <!-- Music Volume Control (Hidden initially, visible after Step 1) -->
+        <div id="volume-control" class="hidden my-4 p-3 bg-gray-100 rounded-xl">
+            <label for="volume-slider" class="text-sm font-semibold text-gray-600 flex items-center justify-center">
+                <span class="mr-2">🎵</span> Music Volume:
+            </label>
+            <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer mt-2" onchange="adjustVolume(this.value)">
+        </div>
+
+        <!-- Initial Message Sequence (Visible first) -->
+        <div id="initial-messages" class="text-center space-y-5 flex flex-col items-center">
+            <p id="msg-1" class="message-bubble opacity-0 text-yellow-800">
+                Hey, guess what? It's your birthday! 🎂
+            </p>
+            <p id="msg-2" class="message-bubble opacity-0 text-green-800">
+                I put my coding skills to work just for you. Hope you like it!
+            </p>
+            <p id="msg-3" class="message-bubble opacity-0 text-pink-800">
+                It's a small interactive journey to get to your wish.
+            </p>
+            <button id="initial-cta" onclick="startSetup()" class="mt-8 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg text-lg font-semibold text-white transition duration-300 transform hover:scale-[1.05] opacity-0 cursor-not-allowed" disabled>
+                Click Here to See What I Made!
+            </button>
+        </div>
+
+        <!-- Step-by-Step Interactive Section (Hidden initially) -->
+        <div id="cta-section" class="hidden flex-col space-y-4">
+            
+            <!-- Buttons are dynamically controlled by JS, hidden with opacity -->
+            <button id="btn-0" onclick="handleStep(0)" class="w-full py-4 px-6 bg-indigo-500 hover:bg-indigo-600 rounded-xl shadow-lg text-lg font-semibold text-white transition duration-300 transform hover:scale-[1.01] active-btn opacity-0" disabled>
+                [1/3] Add color to your B-day party & Play Music 🎶
+            </button>
+            <button id="btn-1" onclick="handleStep(1)" class="w-full py-4 px-6 bg-gray-300 rounded-xl shadow-md text-lg font-semibold text-gray-600 cursor-not-allowed transition duration-300 opacity-0" disabled>
+                [2/3] Add the Party Effects 🎊
+            </button>
+            <button id="btn-2" onclick="handleStep(2)" class="w-full py-4 px-6 bg-gray-300 rounded-xl shadow-md text-lg font-semibold text-gray-600 cursor-not-allowed transition duration-300 opacity-0" disabled>
+                [3/3] Open the Gift Boxes! 🎁
+            </button>
+        </div>
+
+        <!-- Content Area (The illusion wall + gifts, Hidden initially) -->
+        <div id="content-area" class="hidden mt-10 space-y-8">
+            
+            <!-- 1. Lifetime Timer (The prominent wall) -->
+            <div id="timer-box" class="text-center p-8 content-box-bg rounded-xl border-t-4 border-indigo-500 shadow-xl">
+                <h2 class="text-xl sm:text-2xl font-extrabold mb-3 text-indigo-600">
+                    Dekh kitne din ho gye tujhe iss dharti pe, or ye bta gana kaisa laga?
+                </h2>
+                <div id="lifetime-timer" class="text-xl sm:text-4xl font-mono text-pink-600 break-words">
+                    Calculating your existence duration...
+                </div>
+            </div>
+
+            <!-- 2. Gift Boxes Section -->
+            <div class="grid md:grid-cols-2 gap-6 pt-6">
+                
+                <!-- Gift Box 1: Binary Decoder -->
+                <div id="gift-container-1" onclick="openGiftBox(1)" class="p-4 rounded-xl shadow-lg bg-gray-100 hover:bg-gray-200 transition cursor-pointer border border-gray-200">
+                    <!-- Closed State (Image) -->
+                    <div id="gift-closed-1" class="text-center">
+                        <!-- Gift Image 1 (Secret Message) -->
+                        <img id="gift-img-1" src="" class="w-full rounded-lg shadow-xl" alt="Wrapped Red Gift Box">
+                        <p class="mt-3 text-lg sm:text-xl font-bold text-red-600">Click to Open Gift 1</p>
+                    </div>
+                    
+                    <!-- Opened State (Content - hidden initially) -->
+                    <div id="gift-opened-1" class="hidden p-2">
+                        <h3 class="text-xl font-bold mb-4 text-indigo-600">Gift 1: The Secret Message</h3>
+                        <div id="binary-box" class="p-3 bg-gray-800 rounded-lg text-sm sm:text-base font-mono break-all text-green-400">
+                            01110100 01101111 01101000 00100000 01111001 01100101 00100000 01110100 01101000 01100001 00100000 01101101 01100101 01110010 01100001 00100000 01110000 01110010 01101111 01101010 01100101 01100011 01110100 00100000 01101010 01101111 00100000 01101101 01110101 01101010 01101000 01100101 00100000 01110010 01100101 01101001 01110110 01100101 01110111 00100000 01101011 01110010 01110111 01100001 01101110 01100001 00100000 01110100 01101000 01100001 00100000 01110100 01110101 01101010 01101000 01110011 01100101 00101100 00100000 01100010 01110100 01100001 00100000 01101011 01100001 01101001 01110011 01100001 00100000 01101100 01100001 01100111 01100001 00100000 01100001 01101110 01100100 00100000 01101000 01100001 01100000 00100000 01110011 01101111 01101110 01100111 00100000 01100001 01101110 01100100 00100000 01100010 01100100 01100001 01111001 00100000 01110111 01101001 01110011 01101000 00100000 01110110 01101001 01100100 01100101 01101111 00100000 01110100 01101111 01101000 00100000 01110000 01100001 01110011 01100001 01101110 01100100 00100000 01100001 01111001 01100001 00100000 01101000 01101111 01100111 01100000 00100000 01101110 01100001 00101100 00100000 01110101 01101101 01100101 01100101 01100100 00100000 01101011 01110010 01110100 01100001 00100000 01101000 01110101 00100000 01110100 01110101 01101010 01101000 01100101 00100000 01100010 01100100 01100001 01111001 00100000 01110111 01101001 01110011 01101000 00100000 01100001 01100011 01101000 01101000 01100001 00100000 01101100 01100001 01100111 01100001 00100000 01101000 01101111 01100111 01100000
+                        </div>
+                        <button id="decode-btn" onclick="decodeBinary()" class="mt-4 py-2 px-4 bg-yellow-400 hover:bg-yellow-500 text-gray-900 rounded-lg font-semibold transition duration-300 w-full shadow-lg">
+                            Decode Message (Binary to English)
+                        </button>
+                        <p id="decoded-output" class="mt-4 text-center text-base font-medium hidden text-yellow-600"></p>
+                    </div>
+                </div>
+
+                <!-- Gift Box 2: Video Placeholder (Now an iFrame for YouTube) -->
+                <div id="gift-container-2" onclick="openGiftBox(2)" class="p-4 rounded-xl shadow-lg bg-gray-100 hover:bg-gray-200 transition cursor-pointer border border-gray-200">
+                    <!-- Closed State (Image) -->
+                    <div id="gift-closed-2" class="text-center">
+                        <!-- Gift Image 2 (Video) -->
+                        <img id="gift-img-2" src="" class="w-full rounded-lg shadow-xl" alt="Wrapped Blue Gift Box">
+                        <p class="mt-3 text-lg sm:text-xl font-bold text-blue-600">Click to Open Gift 2</p>
+                    </div>
+                    
+                    <!-- Opened State (Content - hidden initially) -->
+                    <div id="gift-opened-2" class="hidden p-2">
+                        <h3 class="text-xl font-bold mb-4 text-indigo-600">Gift 2: The Birthday Wish</h3>
+                        <div id="video-container" class="aspect-video bg-gray-800 rounded-lg overflow-hidden border border-gray-600">
+                            <!-- IFRAME for YouTube Embed -->
+                            <iframe id="youtube-frame" class="w-full h-full" 
+                                    src="" 
+                                    frameborder="0" 
+                                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen>
+                            </iframe>
+                        </div>
+                        <p class="text-gray-500 text-xs mt-3 text-center">
+                            *This is your special video greeting! Click the play button to hear the message.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="final-note" class="hidden text-center mt-8 p-4">
+                <p class="text-xl text-indigo-600 font-semibold italic">
+                    Hope this little technical surprise brightened your day! Happy Birthday, Choohiya ;)!
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <footer class="mt-8 text-sm text-gray-500">
+        Coded with ☕ &amp; Dedication.
+    </footer>
+
+    <script>
+        // Base64 SVG of a wrapped red gift box for reliable display
+        const GIFT_BOX_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <rect x="10" y="30" width="80" height="50" fill="#E53935" rx="8"/>
+          <path d="M50 5L40 30H60L50 5Z" fill="#FFC107"/>
+          <rect x="40" y="5" width="20" height="90" fill="#FFC107"/>
+          <rect x="10" y="47" width="80" height="6" fill="#FFC107"/>
+          <path d="M50 30L40 50L50 70L60 50L50 30Z" fill="#F44336"/>
+          <path d="M50 5L55 25L50 30L45 25L50 5Z" fill="#FFEB3B"/>
+          <path d="M50 5L55 25L50 30L45 25L50 5Z" fill="#FFEB3B" transform="rotate(45 50 20)"/>
+          <path d="M50 5L55 25L50 30L45 25L50 5Z" fill="#FFEB3B" transform="rotate(-45 50 20)"/>
+          <rect x="10" y="30" width="80" height="50" fill="none" stroke="#B71C1C" stroke-width="2" rx="8"/>
+        </svg>`).replace(/'/g, '%27').replace(/"/g, '%22');
+        
+        // --- CONFIGURATION ---
+        // DOB Confirmed: October 1st, 2004 (Month is 9 for October)
+        const BIRTHDAY_DATE = new Date(2004, 9, 1, 0, 0, 0); 
+        
+        // !!! CENTRAL MEDIA CONFIGURATION - UPDATE THESE THREE LINES !!!
+        // You MUST replace these placeholder strings with the actual paths/URLs for your uploaded files.
+        const MEDIA_CONFIG = {
+            // Place your YouTube SHARE link here (e.g., https://https://youtu.be/Qz2sfeVOhh8?si=084GysXe9Naa7_a5)
+            VIDEO_SRC: 'https://youtu.be/Qz2sfeVOhh8?si=084GysXe9Naa7_a5', 
+            // Place your audio file link here (MP3/WAV)
+            AUDIO_SRC: 'Sia - Snowman [Official Video].mp3', 
+            // Gift Box 1 & 2: Now use a Base64 SVG for guaranteed display. If you want your own image, replace this string.
+            GIFT1_IMG_SRC: GIFT_BOX_SVG, 
+            GIFT2_IMG_SRC: GIFT_BOX_SVG
+        };
+
+        // This is the friendly, encoded message
+        const BINARY_MESSAGE = "01110100 01101111 01101000 00100000 01111001 01100101 00100000 01110100 01101000 01100001 00100000 01101101 01100101 01110010 01100001 00100000 01110000 01110010 01101111 01101010 01100101 01100011 01110100 00100000 01101010 01101111 00100000 01101101 01110101 01101010 01101000 01100101 00100000 01110010 01100101 01101001 01110110 01100101 01110111 00100000 01101011 01110010 01110111 01100001 01101110 01100001 00100000 01110100 01101000 01100001 00100000 01110100 01110101 01101010 01101000 01110011 01100101 00101100 00100000 01100010 01110100 01100001 00100000 01101011 01100001 01101001 01110011 01100001 00100000 01101100 01100001 01100111 01100001 00100000 01100001 01101110 01100100 00100000 01101000 01100001 01100000 00100000 01110011 01101111 01101110 01100111 00100000 01100001 01101110 01100100 00100000 01100010 01100100 01100001 01111001 00100000 01110111 01101001 01110011 01101000 00100000 01110110 01101001 01100100 01100101 01101111 00100000 01110100 01101111 01101000 00100000 01110000 01100001 01110011 01100001 01101110 01100100 00100000 01100001 01111001 01100001 00100000 01101000 01101111 01100111 01100000 00100000 01101110 01100001 00101100 00100000 01110101 01101101 01100101 01100101 01100100 00100000 01101011 01110010 01110100 01100001 00100000 01101000 01110101 00100000 01110100 01110101 01101010 01101000 01100101 00100000 01100010 01100100 01100001 01111001 00100000 01110111 01101001 01110011 01101000 00100000 01100001 01100011 01101000 01101000 01100001 00100000 01101100 01100001 01100111 01100001 00100000 01101000 01101111 01100111 01100000";
+
+        // Theme definitions (Simplified to one, default to Party Mode)
+        const THEMES = {
+            party: {
+                className: 'party-bg',
+                musicMessage: '🔊 High-Energy Anthem Playing! Colors added!',
+                color: 'pink-600',
+            }
+        };
+
+        // --- GLOBAL STATE & ELEMENTS ---
+        let currentStep = 0; 
+        const btns = [];
+        for (let i = 0; i < 3; i++) {
+            btns.push(document.getElementById(`btn-${i}`));
+        }
+        
+        const initialMessages = document.getElementById('initial-messages');
+        const initialCta = document.getElementById('initial-cta');
+        const ctaSection = document.getElementById('cta-section');
+        const confettiContainer = document.getElementById('confetti-container');
+        const lifetimeTimerEl = document.getElementById('lifetime-timer');
+        const finalNoteEl = document.getElementById('final-note');
+        const audioEl = document.getElementById('background-music');
+        const subHeader = document.getElementById('sub-header');
+        const volumeControl = document.getElementById('volume-control');
+        const volumeSlider = document.getElementById('volume-slider');
+        
+        let masterVolume = 0.5; // Master volume state (50%)
+
+        // --- UTILITY: YOUTUBE EMBED FIX ---
+        function getYouTubeEmbedUrl(url) {
+            if (!url) return '';
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            
+            if (match && match[2] && match[2].length === 11) {
+                // Keep rel=0 to hide related videos. No autoplay/mute.
+                return `https://www.youtube.com/embed/${match[2]}?rel=0`;
+            }
+            if (url.includes('youtu.be')) {
+                const videoId = url.split('/').pop().split('?')[0];
+                if (videoId) {
+                    return `https://www.youtube.com/embed/${videoId}?rel=0`;
+                }
+            }
+            return ''; 
+        }
+        
+        // --- VOLUME CONTROL FUNCTIONS ---
+        function adjustVolume(value) {
+            masterVolume = value / 100;
+            audioEl.volume = masterVolume;
+        }
+
+        // --- INITIAL SEQUENCE LOGIC ---
+
+        function startInitialSequence() {
+            // Set media sources on load
+            document.getElementById('gift-img-1').src = MEDIA_CONFIG.GIFT1_IMG_SRC;
+            document.getElementById('gift-img-2').src = MEDIA_CONFIG.GIFT2_IMG_SRC;
+            audioEl.querySelector('source').src = MEDIA_CONFIG.AUDIO_SRC;
+            
+            // Set the YouTube embed link to the iframe source
+            const embedUrl = getYouTubeEmbedUrl(MEDIA_CONFIG.VIDEO_SRC);
+            document.getElementById('youtube-frame').src = embedUrl;
+
+            // Set default volume and load audio
+            audioEl.volume = masterVolume;
+            audioEl.load();
+
+            const messages = [
+                {id: 'msg-1', delay: 700}, 
+                {id: 'msg-2', delay: 2500},
+                {id: 'msg-3', delay: 5000},
+            ];
+            
+            messages.forEach((msg) => {
+                setTimeout(() => {
+                    const el = document.getElementById(msg.id);
+                    el.classList.remove('opacity-0');
+                }, msg.delay);
+            });
+
+            // Reveal the final CTA button
+            setTimeout(() => {
+                initialCta.classList.remove('opacity-0', 'cursor-not-allowed');
+                initialCta.disabled = false;
+                subHeader.textContent = "Your digital surprise is ready!";
+            }, messages[messages.length - 1].delay + 1000);
+        }
+
+        // Function to start the main interactive setup
+        function startSetup() {
+            // Hide messages and CTA
+            initialMessages.classList.add('hidden');
+            initialCta.classList.add('hidden');
+            
+            // Show the CTA section container
+            ctaSection.classList.remove('hidden');
+            ctaSection.classList.add('flex');
+            subHeader.textContent = "Koi Jaldi nahi hai, enjoy krte hue aage badh!";
+            
+            // Sequentially reveal buttons with a delay
+            const elementsToReveal = [
+                document.getElementById('btn-0'),
+                document.getElementById('btn-1'),
+                document.getElementById('btn-2')
+            ];
+
+            elementsToReveal.forEach((el, index) => {
+                setTimeout(() => {
+                    el.classList.remove('opacity-0');
+                    // Enable the first button
+                    if (index === 0) { 
+                        el.disabled = false;
+                    }
+                }, index * 400); // 400ms delay between each element popping up
+            });
+
+            updateButtons();
+        }
+
+        // --- GIFT BOX LOGIC ---
+
+        function openGiftBox(boxNumber) {
+            const closedEl = document.getElementById(`gift-closed-${boxNumber}`);
+            const openedEl = document.getElementById(`gift-opened-${boxNumber}`);
+            
+            if (closedEl.classList.contains('hidden')) return; // Already opened
+
+            closedEl.classList.add('hidden');
+            openedEl.classList.remove('hidden');
+
+            document.getElementById(`gift-container-${boxNumber}`).onclick = null;
+            document.getElementById(`gift-container-${boxNumber}`).classList.remove('cursor-pointer', 'hover:bg-gray-200');
+
+            if (boxNumber === 2) {
+                // SUPPRESSION LOGIC: Lower background volume when video is opened
+                audioEl.volume = 0.3 * masterVolume; // Lower to 30% of current master volume
+            } else {
+                // If the other box is opened, reset to master volume if video wasn't opened
+                if (document.getElementById(`gift-opened-2`).classList.contains('hidden')) {
+                    audioEl.volume = masterVolume;
+                }
+            }
+        }
+
+
+        // --- STEP HANDLER LOGIC ---
+
+        function updateButtons() {
+            // The steps are now [1/3], [2/3], [3/3]
+            const newTexts = [
+                '[1/3] Add color to your B-day party & Play Music 🎶',
+                '[2/3] Add the Party Effects 🎊',
+                '[3/3] Open the Gift Boxes! 🎁'
+            ];
+            
+            btns.forEach((btn, index) => {
+                btn.textContent = newTexts[index];
+                
+                if (index === currentStep) { 
+                    btn.disabled = false;
+                    btn.classList.remove('bg-gray-300', 'text-gray-600', 'cursor-not-allowed', 'shadow-md');
+                    btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'transform', 'hover:scale-[1.01]', 'active-btn');
+                } else if (index < currentStep) {
+                    btn.disabled = true;
+                    btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'transform', 'hover:scale-[1.01]', 'active-btn');
+                    btn.classList.add('bg-green-500', 'text-white', 'opacity-80', 'cursor-default', 'shadow-md');
+                    btn.textContent = `✅ Step ${index + 1}: Added`; // Changed to [1/3]
+                } else {
+                    btn.disabled = true;
+                    btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'transform', 'hover:scale-[1.01]', 'active-btn');
+                    btn.classList.add('bg-gray-300', 'text-gray-600', 'opacity-50', 'cursor-not-allowed', 'shadow-md');
+                }
+            });
+        }
+        
+        function deployTheme() {
+            const theme = THEMES.party; // Fixed to Party Mode
+            
+            document.body.classList.remove('default-bg');
+            document.body.classList.add(theme.className);
+            
+            // Show volume control UI
+            volumeControl.classList.remove('hidden');
+
+            // Music needs to be loaded/played here
+            audioEl.load(); // Ensure the source is loaded after setting src in startInitialSequence
+            audioEl.play().catch(error => {
+                console.warn("Autoplay prevented. User may need to manually click play.");
+            }); 
+
+            alertMessage(theme.musicMessage, theme.color);
+        }
+
+        function handleStep(btnIndex) {
+            if (btnIndex !== currentStep) return;
+
+            switch (btnIndex) {
+                case 0: // Add color & Music (Step 1)
+                    deployTheme();
+                    currentStep++;
+                    updateButtons();
+                    break;
+                case 1: // Add the Party Effects (Step 2 - Balloons)
+                    startConfetti();
+                    alertMessage('🎈 Effects Added! The celebration is taking off!', 'indigo-600');
+                    currentStep++;
+                    updateButtons();
+                    break;
+                case 2: // Open the Gift Boxes! (Step 3)
+                    revealBirthdayWish();
+                    // Final button visual update is done inside revealBirthdayWish
+                    break; 
+            }
+        }
+
+        // --- LIFETIME TIMER LOGIC ---
+
+        function updateTimer() {
+            const now = new Date();
+            const birth = BIRTHDAY_DATE;
+            const diffMs = now.getTime() - birth.getTime();
+
+            if (diffMs < 0) {
+                lifetimeTimerEl.innerHTML = "Error: Birthday hasn't happened yet! (Please check the BIRTHDAY_DATE variable)";
+                return;
+            }
+
+            let years = now.getFullYear() - birth.getFullYear();
+            let months = now.getMonth() - birth.getMonth();
+            let days = now.getDate() - birth.getDate();
+            let hours = now.getHours() - birth.getHours();
+            let minutes = now.getMinutes() - birth.getMinutes();
+            let seconds = now.getSeconds() - birth.getSeconds();
+
+            if (seconds < 0) { seconds += 60; minutes--; }
+            if (minutes < 0) { minutes += 60; hours--; }
+            if (hours < 0) { hours += 24; days--; }
+            if (days < 0) {
+                months--;
+                const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                days += prevMonth.getDate();
+            }
+            if (months < 0) { months += 12; years--; }
+
+            const totalSeconds = Math.floor(diffMs / 1000);
+            
+            const timerHtml = `
+                <span class="block mb-2">
+                    <span class="text-3xl font-extrabold">${years}</span> YRS | 
+                    <span class="text-3xl font-extrabold">${months}</span> MOS | 
+                    <span class="text-3xl font-extrabold">${days}</span> DAYS
+                </span>
+                <span class="block text-xl font-normal">
+                    <span class="font-bold">${hours}</span> HRS | 
+                    <span class="font-bold">${minutes}</span> MINS | 
+                    <span class="font-bold">${seconds}</span> SECS
+                </span>
+                <span class="block text-base text-gray-500 mt-2">
+                    Total: ${totalSeconds.toLocaleString()} seconds and counting...
+                </span>
+            `;
+
+            lifetimeTimerEl.innerHTML = timerHtml;
+        }
+
+        // --- UTILITY FUNCTIONS ---
+
+        function alertMessage(message, color) {
+            const existingAlert = document.getElementById('custom-alert');
+            if (existingAlert) existingAlert.remove();
+
+            const alertDiv = document.createElement('div');
+            alertDiv.id = 'custom-alert';
+            alertDiv.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-xl bg-white text-${color} font-bold animate-pulse`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => alertDiv.remove(), 500);
+            }, 3000);
+        }
+
+        function startConfetti() {
+            confettiContainer.classList.remove('hidden');
+            const colors = ['#f97316', '#a855f7', '#3b82f6', '#f472b6', '#34d399', '#fde047']; 
+            const pieces = 50;
+
+            for (let i = 0; i < pieces; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = `${Math.random() * 100}vw`;
+                piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = `${Math.random() * 5}s`;
+                piece.style.animationDuration = `${7 + Math.random() * 5}s`; 
+                
+                const sizeMultiplier = 0.8 + Math.random() * 0.4;
+                piece.style.width = `${12 * sizeMultiplier}px`; 
+                piece.style.height = `${18 * sizeMultiplier}px`; 
+                piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+                confettiContainer.appendChild(piece);
+            }
+        }
+        
+        function decodeBinary() {
+            const binary = BINARY_MESSAGE.split(' ');
+            let decodedString = '';
+
+            try {
+                binary.forEach(byte => {
+                    decodedString += String.fromCharCode(parseInt(byte, 2));
+                });
+                
+                document.getElementById('binary-box').textContent = decodedString;
+                document.getElementById('decoded-output').textContent = "SUCCESS: Message Revealed!";
+                document.getElementById('decoded-output').classList.remove('hidden');
+                document.getElementById('decode-btn').disabled = true;
+                document.getElementById('decode-btn').classList.remove('bg-yellow-400', 'hover:bg-yellow-500');
+                document.getElementById('decode-btn').classList.add('bg-green-600', 'cursor-default', 'text-white');
+
+            } catch (e) {
+                document.getElementById('decoded-output').textContent = "ERROR: Failed to decode binary. Check input.";
+                document.getElementById('decoded-output').classList.remove('hidden');
+                console.error("Decoding error:", e);
+            }
+        }
+
+        // Final Reveal
+        function revealBirthdayWish() {
+            ctaSection.classList.add('hidden');
+            document.getElementById('content-area').classList.remove('hidden');
+            
+            updateTimer();
+            setInterval(updateTimer, 1000); 
+
+            // Final button checkmark update
+            const finalBtn = document.getElementById('btn-2');
+            finalBtn.disabled = true;
+            finalBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'transform', 'hover:scale-[1.01]', 'active-btn');
+            finalBtn.classList.add('bg-green-500', 'text-white', 'opacity-80', 'cursor-default', 'shadow-md');
+            finalBtn.textContent = `✅ Step 3: Gifts Unlocked!`;
+
+            setTimeout(() => {
+                finalNoteEl.classList.remove('hidden');
+            }, 100);
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            startInitialSequence();
+        };
+    </script>
+</body>
+</html>
